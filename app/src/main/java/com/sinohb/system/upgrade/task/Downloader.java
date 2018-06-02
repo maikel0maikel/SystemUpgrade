@@ -2,6 +2,7 @@ package com.sinohb.system.upgrade.task;
 
 import com.sinohb.logger.LogTools;
 import com.sinohb.logger.utils.IOUtils;
+import com.sinohb.logger.utils.LogUtils;
 import com.sinohb.system.upgrade.database.DatabaseFoctory;
 import com.sinohb.system.upgrade.entity.DownloadInfo;
 
@@ -23,6 +24,34 @@ public class Downloader implements Runnable {
     private Object sync = new Object();
     private boolean isFinish = false;
     private DownloadProcessListener mProcessListener;
+
+    public boolean isPause() {
+        return isPause;
+    }
+
+    public void setPause(boolean pause) {
+        synchronized (sync) {
+            isPause = pause;
+            sync.notify();
+        }
+
+    }
+
+    public boolean isCancel() {
+        return isCancel;
+    }
+
+    public void setCancel(boolean cancel) {
+        isCancel = cancel;
+    }
+
+    public boolean isFinish() {
+        return isFinish;
+    }
+
+    public void setFinish(boolean finish) {
+        isFinish = finish;
+    }
 
     public Downloader(String url, File file, long downloadSize, int id, DownloadProcessListener processListener) {
         this.mFile = file;
@@ -71,6 +100,7 @@ public class Downloader implements Runnable {
                     if (isPause) {
                         info.setStartDownLoadIndex(finishSize);
                         DatabaseFoctory.getInstance().update(info);
+                        LogTools.e(TAG, "进入暂停");
                         synchronized (sync) {
                             try {
                                 sync.wait();//暂停时该线程进入等待状态，并释放dao的锁
@@ -84,11 +114,17 @@ public class Downloader implements Runnable {
                             connection.setRequestProperty("Range", "bytes=" + finishSize + "-" + end);
                             raf.seek(finishSize);
                             in = connection.getInputStream();
+                            LogTools.e(TAG, "恢复下载");
                         }
                     }
                     if (isCancel) {
                         info.setStartDownLoadIndex(0l);
                         DatabaseFoctory.getInstance().update(info);
+                        isFinish = true;
+                        LogTools.e(TAG, "取消下载");
+                        if (mProcessListener!=null){
+                            mProcessListener.onTaskCancel(this);
+                        }
                         return;
                     }
                 }
@@ -96,6 +132,9 @@ public class Downloader implements Runnable {
             isFinish = true;
             DatabaseFoctory.getInstance().delete(url, mTheadId);
             LogTools.e(TAG, "下载任务完成：" + Thread.currentThread().getName());
+            if (mProcessListener!=null){
+                mProcessListener.onTaskFinished(this);
+            }
         } catch (IOException e) {
             LogTools.e(TAG, "下载失败：" + e.getMessage());
         } finally {
@@ -115,5 +154,7 @@ public class Downloader implements Runnable {
 
     public interface DownloadProcessListener {
         void onDoneSize(long size);
+        void onTaskFinished(Downloader downloader);
+        void onTaskCancel(Downloader downloader);
     }
 }

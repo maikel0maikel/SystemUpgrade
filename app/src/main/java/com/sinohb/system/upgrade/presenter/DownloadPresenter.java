@@ -5,7 +5,7 @@ import com.sinohb.system.upgrade.BaseView;
 
 public interface DownloadPresenter {
 
-    public interface View extends BaseView<Controller>{
+    public interface View extends BaseView<Controller> {
 
         void downloadProcess(int process);
 
@@ -17,15 +17,22 @@ public interface DownloadPresenter {
 
         void notifyFileSize(float size);
 
+        void notifyTaskCanceled();
+
     }
 
 
-    public interface Controller extends BasePresenter{
+    public interface Controller extends BasePresenter {
 
         void pause();
 
+        void resume();
+
         void cancel();
 
+        void download(String url);
+
+        void taskCanceled();
     }
 
 }

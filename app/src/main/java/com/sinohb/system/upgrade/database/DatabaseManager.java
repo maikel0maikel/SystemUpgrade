@@ -19,7 +19,7 @@ public class DatabaseManager implements DatabaseManagerable {
     public boolean insert(DownloadInfo info) {
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         try {
-            db.execSQL("insert into " + DatabaseHelper.TABLE_NAME + "(url,threadId,startIndex) values(?,?,?)", new Object[]{info.getmUrl(), info.getThreadId(), info.getmDownloadSize()});
+            db.execSQL("insert into " + DatabaseHelper.TABLE_NAME + "(url,threadId,startIndex) values(?,?,?)", new Object[]{info.getmUrl(), info.getThreadId(), info.getStartDownLoadIndex()});
             //db.close();
             return true;
         } catch (Exception e) {
@@ -32,7 +32,7 @@ public class DatabaseManager implements DatabaseManagerable {
     public boolean update(DownloadInfo info) {
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         try {
-            db.execSQL("UPDATE " + DatabaseHelper.TABLE_NAME + "  SET startIndex=? WHERE url=? AND threadId=?", new Object[]{info.getmUrl(), info.getThreadId(), info.getmDownloadSize()});
+            db.execSQL("UPDATE " + DatabaseHelper.TABLE_NAME + "  SET startIndex=? WHERE url=? AND threadId=?", new Object[]{info.getmUrl(), info.getThreadId(), info.getStartDownLoadIndex()});
            // db.close();
             return true;
         } catch (Exception e) {
@@ -90,7 +90,7 @@ public class DatabaseManager implements DatabaseManagerable {
                 DownloadInfo downloadInfo = new DownloadInfo();
                 downloadInfo.setmUrl(cursor.getString(0));
                 downloadInfo.setThreadId(cursor.getInt(1));
-                downloadInfo.setmDownloadSize(cursor.getLong(2));
+                downloadInfo.setStartDownLoadIndex(cursor.getLong(2));
                 return downloadInfo;
             }
             cursor.close();
@@ -112,7 +112,7 @@ public class DatabaseManager implements DatabaseManagerable {
                 DownloadInfo downloadInfo = new DownloadInfo();
                 downloadInfo.setmUrl(cursor.getString(0));
                 downloadInfo.setThreadId(cursor.getInt(1));
-                downloadInfo.setmDownloadSize(cursor.getLong(2));
+                downloadInfo.setStartDownLoadIndex(cursor.getLong(2));
                 downloadInfos.add(downloadInfo);
             }
             cursor.close();

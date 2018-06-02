@@ -3,6 +3,7 @@ package com.sinohb.system.upgrade.task;
 import android.os.Environment;
 
 import com.sinohb.logger.LogTools;
+import com.sinohb.system.upgrade.pool.ThreadPool;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,6 +11,8 @@ import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class DownloadTask implements Runnable, Downloader.DownloadProcessListener {
     private static final String TAG = "DownloadTask";
@@ -18,8 +21,17 @@ public class DownloadTask implements Runnable, Downloader.DownloadProcessListene
     private DownloadListener mListener;
     private volatile long mFinishSize = 0;
     private long mFileSize = 0;
+    private List<Runnable> downloaders;
+
+    public DownloadTask() {
+
+    }
 
     public DownloadTask(String url) {
+        this.url = url;
+    }
+
+    public void setUrl(String url) {
         this.url = url;
     }
 
@@ -29,6 +41,12 @@ public class DownloadTask implements Runnable, Downloader.DownloadProcessListene
 
     @Override
     public void run() {
+        if (url == null || url.length() == 0) {
+            if (mListener != null) {
+                mListener.onFailure("empty url please check");
+            }
+            return;
+        }
         HttpURLConnection connection = null;
         try {
             URL downloadUrl = new URL(url);
@@ -50,11 +68,15 @@ public class DownloadTask implements Runnable, Downloader.DownloadProcessListene
                 RandomAccessFile raf = new RandomAccessFile(file, "rws");
                 raf.setLength(fileSize);
                 raf.close();
-//                long partLen = (fileSize + DOWN_LOAD_COUNT - 1) / DOWN_LOAD_COUNT;//每个线程下载的大小
-                long partLen = fileSize % DOWN_LOAD_COUNT == 0 ? (fileSize / DOWN_LOAD_COUNT) : (fileSize / DOWN_LOAD_COUNT + 1);
+                long partLen = fileSize % DOWN_LOAD_COUNT == 0 ? (fileSize / DOWN_LOAD_COUNT) : (fileSize / DOWN_LOAD_COUNT + 1);//每个线程下载的大小
+                downloaders = new ArrayList<>();
                 for (int i = 1; i <= DOWN_LOAD_COUNT; i++) {
-                    new Thread(new Downloader(url, file, partLen, i, this)).start();
+                    Downloader downloader
+                            = new Downloader(url, file, partLen, i, this);
+                    // new Thread(downloaders[j]).start();
+                    downloaders.add(downloader);
                 }
+                ThreadPool.getPool().execute(downloaders);
             }
         } catch (MalformedURLException e) {
             String error = e.getMessage() == null ? "unknown error " : e.getMessage();
@@ -82,17 +104,78 @@ public class DownloadTask implements Runnable, Downloader.DownloadProcessListene
 
     @Override
     public synchronized void onDoneSize(long size) {
-        LogTools.e(TAG, "mFinishSize:" + mFinishSize+",size:"+size);
+        LogTools.i(TAG, "mFinishSize:" + mFinishSize + ",size:" + size);
         mFinishSize += size;
-        LogTools.e(TAG, "mFinishSize:" + mFinishSize+",mFileSize:"+mFileSize);
-        int progress = (int) (100*mFinishSize / mFileSize);
+        LogTools.i(TAG, "mFinishSize:" + mFinishSize + ",mFileSize:" + mFileSize);
+        int progress = (int) (100 * mFinishSize / mFileSize);
         if (mListener != null) {
             mListener.onProgress(progress);
         }
-        if (mFinishSize == mFileSize){
-            if (mListener!=null){
+        if (mFinishSize == mFileSize) {
+            if (mListener != null) {
                 mListener.onFinish();
+                reset();
             }
         }
+    }
+
+    @Override
+    public void onTaskFinished(Downloader downloader) {
+        downloaders.remove(downloader);
+        if (downloaders.isEmpty()) {
+            LogTools.e(TAG, "all task is executed");
+            if (mListener != null) {
+                mListener.onTaskComplete();
+                reset();
+            }
+        }
+    }
+
+    @Override
+    public void onTaskCancel(Downloader downloader) {
+        downloaders.remove(downloader);
+        if (downloaders.isEmpty()) {
+            LogTools.e(TAG, "all task is executed");
+            if (mListener != null) {
+                mListener.onTaskCancled();
+                reset();
+            }
+        }
+    }
+
+    public void pause() {
+        if (downloaders != null) {
+            for (Runnable task : downloaders) {
+                Downloader downloaderTask = (Downloader) task;
+                if (!downloaderTask.isFinish()) {
+                    downloaderTask.setPause(true);
+                }
+            }
+        }
+    }
+
+    public void resume() {
+        if (downloaders != null) {
+            for (Runnable task : downloaders) {
+                Downloader downloaderTask = (Downloader) task;
+                if (downloaderTask.isPause() && !downloaderTask.isFinish()) {
+                    downloaderTask.setPause(false);
+                }
+            }
+        }
+    }
+
+    public void cancel() {
+        if (downloaders != null) {
+            for (Runnable task : downloaders) {
+                Downloader downloaderTask = (Downloader) task;
+                downloaderTask.setCancel(true);
+            }
+        }
+    }
+
+    private void reset(){
+        mFinishSize = 0;
+        mFileSize = 0;
     }
 }

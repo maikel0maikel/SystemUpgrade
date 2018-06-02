@@ -16,6 +16,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     private DownloadTask downloadTask;
     DownloadPresenter.View view;
     private UpdateHandler mHandler;
+
     public DownloadController(DownloadPresenter.View view) {
         this.view = view;
         mHandler = new UpdateHandler(this);
@@ -24,24 +25,41 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
 
     @Override
     public void start() {
-        downloadTask = new DownloadTask("http://downloadz.dewmobile.net/Official/Kuaiya482.apk");
+        downloadTask = new DownloadTask();
         downloadTask.setListener(this);
-        ThreadPool.getPool().execute(downloadTask);
     }
 
     @Override
     public void pause() {
+        downloadTask.pause();
+    }
 
+    @Override
+    public void resume() {
+        downloadTask.resume();
     }
 
     @Override
     public void cancel() {
+        downloadTask.cancel();
+    }
 
+    @Override
+    public void download(String url) {
+        downloadTask.setUrl(url);
+        ThreadPool.getPool().execute(downloadTask);
+    }
+
+    @Override
+    public void taskCanceled() {
+        LogTools.e(TAG, "taskCanceled");
+        mHandler.sendEmptyMessage(UpdateHandler.MSG_TASK_CANCELED);
     }
 
     @Override
     public void onFinish() {
         LogTools.e(TAG, "onFinish");
+        mHandler.sendEmptyMessage(UpdateHandler.MSG_DOWNLOAD_COMPLETE);
     }
 
     @Override
@@ -52,26 +70,39 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     @Override
     public synchronized void onProgress(int progress) {
         LogTools.i(TAG, "onProgress:" + progress);
-        mHandler.obtainMessage(UpdateHandler.MSG_FILE_PROGRESS,progress).sendToTarget();
+        mHandler.obtainMessage(UpdateHandler.MSG_FILE_PROGRESS, progress).sendToTarget();
     }
 
     @Override
     public void onFileSize(long size) {
         float fileSize = size / (1024.0f * 1024.0f);
         LogTools.e(TAG, "fileSize:" + fileSize);
-        mHandler.obtainMessage(UpdateHandler.MSG_FILE_SIZE,fileSize).sendToTarget();
+        mHandler.obtainMessage(UpdateHandler.MSG_FILE_SIZE, fileSize).sendToTarget();
     }
 
     @Override
     public void onFileName(String name) {
         LogTools.e(TAG, "onFileName:" + name);
-        mHandler.obtainMessage(UpdateHandler.MSG_FILE_NAME,name).sendToTarget();
+        mHandler.obtainMessage(UpdateHandler.MSG_FILE_NAME, name).sendToTarget();
+    }
+
+    @Override
+    public void onTaskComplete() {
+        mHandler.sendEmptyMessage(UpdateHandler.MSG_TASK_FINISHED);
+    }
+
+    @Override
+    public void onTaskCancled() {
+        mHandler.sendEmptyMessage(UpdateHandler.MSG_TASK_CANCELED);
     }
 
     private static class UpdateHandler extends Handler {
         static final int MSG_FILE_NAME = 1;
         static final int MSG_FILE_SIZE = 2;
         static final int MSG_FILE_PROGRESS = 3;
+        static final int MSG_TASK_CANCELED = 4;
+        static final int MSG_TASK_FINISHED = 5;
+        static final int MSG_DOWNLOAD_COMPLETE = 6;
         private WeakReference<DownloadController> controllerWeakReference;
 
         UpdateHandler(DownloadController controller) {
@@ -102,6 +133,15 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
                 case MSG_FILE_PROGRESS:
                     int progress = (int) msg.obj;
                     controller.view.downloadProcess(progress);
+                    break;
+                case MSG_TASK_CANCELED:
+                    controller.view.notifyTaskCanceled();
+                    break;
+                case MSG_TASK_FINISHED:
+                    controller.view.notifyTaskCanceled();
+                    break;
+                case MSG_DOWNLOAD_COMPLETE:
+                    controller.view.complete();
                     break;
             }
         }

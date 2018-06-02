@@ -2,6 +2,7 @@ package com.sinohb.system.upgrade.pool;
 
 
 import com.sinohb.logger.LogTools;
+import com.sinohb.system.upgrade.task.Downloader;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -9,7 +10,7 @@ import java.util.List;
 public class ThreadPool {
     private static final String TAG = "ThreadPool";
     private static ThreadPool pool = null;
-    private static final int POOL_SIZE = 3;
+    private static final int POOL_SIZE = 5;
     private List<Runnable> mWorkerQueue = new LinkedList<>();
     private Worker[] mWorkers;
 
@@ -48,7 +49,6 @@ public class ThreadPool {
             mWorkerQueue.notify();
         }
     }
-
     public void execute(Runnable[] tasks) {
         synchronized (mWorkerQueue) {
             for (Runnable r : tasks) {
@@ -81,7 +81,7 @@ public class ThreadPool {
         @Override
         public void run() {
             Runnable r = null;
-            LogTools.d(TAG,"pool开始工作："+Thread.currentThread().getName());
+            LogTools.e(TAG,"pool开始工作："+Thread.currentThread().getName());
             while (isRun) {
                 synchronized (mWorkerQueue) {
                     while (isRun && mWorkerQueue.isEmpty()) {

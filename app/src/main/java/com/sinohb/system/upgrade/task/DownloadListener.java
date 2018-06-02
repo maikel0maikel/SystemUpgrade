@@ -11,4 +11,8 @@ public interface DownloadListener {
     void onFileSize(long size);
 
     void onFileName(String name);
+
+    void onTaskComplete();
+
+    void onTaskCancled();
 }
