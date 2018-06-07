@@ -33,6 +33,8 @@ public interface DownloadPresenter {
         void download(String url);
 
         void taskCanceled();
+
+        boolean isTaskStart();
     }
 
 }

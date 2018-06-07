@@ -1,8 +1,8 @@
 package com.sinohb.system.upgrade.task;
 
-import android.os.Environment;
 
 import com.sinohb.logger.LogTools;
+import com.sinohb.system.upgrade.constant.UpgradeConstants;
 import com.sinohb.system.upgrade.pool.ThreadPool;
 
 import java.io.File;
@@ -14,7 +14,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DownloadTask implements Runnable, Downloader.DownloadProcessListener {
+public class DownloadTask implements Runnable, DownloadProcessListener {
     private static final String TAG = "DownloadTask";
     private static final int DOWN_LOAD_COUNT = 5;
     private String url;
@@ -22,7 +22,6 @@ public class DownloadTask implements Runnable, Downloader.DownloadProcessListene
     private volatile long mFinishSize = 0;
     private long mFileSize = 0;
     private List<Runnable> downloaders;
-
     public DownloadTask() {
 
     }
@@ -61,10 +60,15 @@ public class DownloadTask implements Runnable, Downloader.DownloadProcessListene
                     mListener.onFileSize(fileSize);
                 }
                 String name = url.substring(url.lastIndexOf("/") + 1);
+                File file = new File(UpgradeConstants.DOWNLOAD_PATH, name);
+                if (!file.getParentFile().exists()){
+                    file.getParentFile().mkdirs();
+                }
+               String filePath = file.getAbsolutePath();
+                LogTools.p(TAG,"下载路径："+filePath);
                 if (mListener != null) {
                     mListener.onFileName(name);
                 }
-                File file = new File(Environment.getExternalStorageDirectory(), name);
                 RandomAccessFile raf = new RandomAccessFile(file, "rws");
                 raf.setLength(fileSize);
                 raf.close();
@@ -132,7 +136,7 @@ public class DownloadTask implements Runnable, Downloader.DownloadProcessListene
     }
 
     @Override
-    public void onTaskCancel(Downloader downloader) {
+    public void onTaskCancel(BaseDownloader downloader) {
         downloaders.remove(downloader);
         if (downloaders.isEmpty()) {
             LogTools.e(TAG, "all task is executed");

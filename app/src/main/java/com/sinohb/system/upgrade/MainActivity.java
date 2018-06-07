@@ -1,9 +1,7 @@
 package com.sinohb.system.upgrade;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
+import android.content.Intent;
 import android.os.Environment;
-import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -11,12 +9,25 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.sinohb.logger.LogTools;
+import com.sinohb.system.upgrade.entity.Test;
+import com.sinohb.system.upgrade.net.basic.HttpRequest;
+import com.sinohb.system.upgrade.net.basic.HttpStringRequest;
+import com.sinohb.system.upgrade.net.okhttp.OkhttpFactory;
+import com.sinohb.system.upgrade.net.retrofit.RetrofitFactory;
 import com.sinohb.system.upgrade.pool.ThreadPool;
 import com.sinohb.system.upgrade.presenter.DownloadController;
 import com.sinohb.system.upgrade.presenter.DownloadPresenter;
+import com.sinohb.system.upgrade.service.DownloadService;
+import com.sinohb.system.upgrade.view.UpgradeDialog;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity implements DownloadPresenter.View {
     private DownloadPresenter.Controller presenter;
@@ -28,56 +39,28 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED
-                || checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 10);
-        } else {
             setContentView(R.layout.activity_main);
 //        RecoverySystem.verifyPackage();
 //        RecoverySystem.installPackage();
             initView();
             new DownloadController(this);
-        }
-        String path = Environment.getExternalStorageDirectory().getAbsolutePath()+"/test.log";
-        File file = new File(path);
-        if (!file.exists()){
-            try {
-              boolean create =   file.createNewFile();
-                LogTools.e("MainActivity","create:"+create);
-            } catch (IOException e) {
-                LogTools.e("MainActivity","create:"+e.getMessage());
-            }
-        }
-
+        startService(new Intent(this, DownloadService.class));
     }
 
     private void initView() {
-        nameTv = findViewById(R.id.fileNameTv);
-        sizeTv = findViewById(R.id.fileSizeTv);
-        progressBar = findViewById(R.id.progressBar);
-        downloadTv = findViewById(R.id.downLoadBt);
-        pauseTv = findViewById(R.id.pauseBt);
-        cancelTv = findViewById(R.id.cancelBt);
-        resumeTV = findViewById(R.id.resumeBt);
+        nameTv = (TextView) findViewById(R.id.fileNameTv);
+        sizeTv = (TextView) findViewById(R.id.fileSizeTv);
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        downloadTv = (TextView) findViewById(R.id.downLoadBt);
+        pauseTv = (TextView) findViewById(R.id.pauseBt);
+        cancelTv = (TextView) findViewById(R.id.cancelBt);
+        resumeTV = (TextView) findViewById(R.id.resumeBt);
         pauseTv.setEnabled(false);
         cancelTv.setEnabled(false);
         downloadTv.setEnabled(true);
         resumeTV.setEnabled(false);
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED) {
-            finish();
-        } else {
-            setContentView(R.layout.activity_main);
-            initView();
-//        RecoverySystem.verifyPackage();
-//        RecoverySystem.installPackage();
-            new DownloadController(this);
-        }
-    }
 
     @Override
     public void downloadProcess(int process) {
@@ -87,6 +70,8 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
     @Override
     public void complete() {
         reset();
+//        startActivity(new Intent(this, UpgradeActivity.class));
+        new UpgradeDialog(this).show();
     }
 
     @Override
@@ -139,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
                 pauseTv.setEnabled(true);
                 cancelTv.setEnabled(true);
                 resumeTV.setEnabled(false);
+                //sendRequest();
                 break;
             case R.id.pauseBt:
 //                downloadTv.setEnabled(true);
@@ -152,10 +138,51 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
                 pauseTv.setEnabled(true);
                 break;
             case R.id.cancelBt:
-                presenter.cancel();
+                //presenter.cancel();
+                sendRequest();
                 break;
         }
         view.setEnabled(false);
+    }
+    private void sendRequest() {
+//        HttpStringRequest request = new HttpStringRequest("http://data.fixer.io/api/latest?");
+//        Map<String ,String> pa = new HashMap<>();
+//        pa.put("access_key","a791f2706839b110dee4dd7f5d2c947c");
+//        request.setParamsMap(pa);
+//        request.setResponseListener(new HttpRequest.ResponseListener<String>() {
+//            @Override
+//            public void onSuccess(String response) {
+//                LogTools.d("sendRequest", "response:" + response);
+//            }
+//
+//            @Override
+//            public void onFailure(String error) {
+//                LogTools.d("sendRequest", "error:" + error);
+//            }
+//        }).setResponseOnMainThread(true).submitRequest();
+        OkhttpFactory.getFactory().doGet("http://data.fixer.io/api/latest?access_key=a791f2706839b110dee4dd7f5d2c947c&format=1", new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                LogTools.d("sendRequest", "error:" + e.getMessage());
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                LogTools.d("sendRequest", "response:" + response.body().string());
+            }
+        });
+//        RetrofitFactory.getFactory().getFixrate("a791f2706839b110dee4dd7f5d2c947c",new retrofit2.Callback<Test> () {
+//            @Override
+//            public void onResponse(retrofit2.Call<Test> call, retrofit2.Response<Test> response) {
+//                LogTools.d("sendRequest", "response:" + response.body().getBase());
+//            }
+//
+//            @Override
+//            public void onFailure(retrofit2.Call<Test> call, Throwable t) {
+//                LogTools.d("sendRequest", "error:" + t.getMessage());
+//            }
+//
+//        });
     }
     private void reset(){
         progressBar.setProgress(0);
@@ -168,6 +195,6 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        ThreadPool.getPool().destroy();
+       presenter.onDestroy();
     }
 }

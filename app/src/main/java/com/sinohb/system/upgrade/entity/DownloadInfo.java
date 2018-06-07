@@ -8,7 +8,7 @@ public class DownloadInfo {
 
     private String mUrl;//下载地址
 
-    private int mFileSize;//文件大小
+    private long mFileSize;//文件大小
 
     private int mThreadId;
 
@@ -36,11 +36,11 @@ public class DownloadInfo {
         this.mUrl = mUrl;
     }
 
-    public int getmFileSize() {
+    public long getmFileSize() {
         return mFileSize;
     }
 
-    public void setmFileSize(int mFileSize) {
+    public void setmFileSize(long mFileSize) {
         this.mFileSize = mFileSize;
     }
 

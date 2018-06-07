@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">SystemUpgrade</string>
+    <string name="dialog_title">System Upgrade</string>
+    <string name="dialog_upgrade_label">Upgrade Now</string>
+    <string name="dialog_newest_version">Latest version:</string>
+    <string name="dialog_newest_file_size">Latest version size:</string>
+    <string name="dialog_update_content"> updated content:</string>
+    <string name="dialog_upgrade_later">Later</string>
 </resources>

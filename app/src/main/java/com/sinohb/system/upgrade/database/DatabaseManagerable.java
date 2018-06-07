@@ -10,13 +10,13 @@ public interface DatabaseManagerable {
 
     boolean update(DownloadInfo info);
 
-    boolean delete(String url,int threadId);
+    boolean delete(String url, int threadId);
 
     boolean delete(String url);
 
     boolean clear();
 
-    DownloadInfo getDownloadInfo(String url,int threadId);
+    DownloadInfo getDownloadInfo(String url, int threadId);
 
     List<DownloadInfo> getDownloadInfos(String url);
 

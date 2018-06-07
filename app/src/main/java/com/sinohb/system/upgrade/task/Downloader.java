@@ -13,7 +13,7 @@ import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class Downloader implements Runnable {
+public class Downloader extends BaseDownloader {
     private static final String TAG = "Downloader";
     private int mTheadId;
     private File mFile;
@@ -150,11 +150,5 @@ public class Downloader implements Runnable {
         if (mProcessListener != null) {
             mProcessListener.onDoneSize(size);
         }
-    }
-
-    public interface DownloadProcessListener {
-        void onDoneSize(long size);
-        void onTaskFinished(Downloader downloader);
-        void onTaskCancel(Downloader downloader);
     }
 }

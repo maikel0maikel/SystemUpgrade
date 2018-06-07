@@ -4,11 +4,15 @@ import android.os.Handler;
 import android.os.Message;
 
 import com.sinohb.logger.LogTools;
+import com.sinohb.system.upgrade.entity.DownloadInfo;
 import com.sinohb.system.upgrade.pool.ThreadPool;
 import com.sinohb.system.upgrade.task.DownloadListener;
-import com.sinohb.system.upgrade.task.DownloadTask;
+import com.sinohb.system.upgrade.task.factory.DownloadTask;
+import com.sinohb.system.upgrade.task.factory.SimpleDownloadFactory;
 
 import java.lang.ref.WeakReference;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 
 
 public class DownloadController implements DownloadPresenter.Controller, DownloadListener {
@@ -16,6 +20,13 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     private DownloadTask downloadTask;
     DownloadPresenter.View view;
     private UpdateHandler mHandler;
+    private boolean isTaskStart = false;
+    private boolean isPause = false;
+
+    @Override
+    public boolean isTaskStart() {
+        return isTaskStart;
+    }
 
     public DownloadController(DownloadPresenter.View view) {
         this.view = view;
@@ -25,46 +36,91 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
 
     @Override
     public void start() {
-        downloadTask = new DownloadTask();
-        downloadTask.setListener(this);
+//        downloadTask = new DownloadTask();
+//        downloadTask.setListener(this);
+//        ThreadPool.getPool().execute(new FTPTask());
+    }
+
+    @Override
+    public void onDestroy() {
+        ThreadPool.getPool().destroy();
+        mHandler.removeCallbacksAndMessages(null);
+        isTaskStart = false;
     }
 
     @Override
     public void pause() {
-        downloadTask.pause();
+        if (isTaskStart && !isPause) {
+            downloadTask.pause();
+            isPause = true;
+        }
     }
 
     @Override
     public void resume() {
-        downloadTask.resume();
+        if (isTaskStart && isPause) {
+            downloadTask.resume();
+            isPause = false;
+        }
+
     }
 
     @Override
     public void cancel() {
-        downloadTask.cancel();
+        if (isTaskStart&&!isPause) {
+            downloadTask.cancel();
+            reset();
+        }
     }
 
     @Override
     public void download(String url) {
-        downloadTask.setUrl(url);
-        ThreadPool.getPool().execute(downloadTask);
+        if (isTaskStart) {
+            return;
+        }
+        downloadTask = SimpleDownloadFactory.createTask(url);
+        isTaskStart = true;
+        //downloadTask.setUrl(url);
+        downloadTask.setListener(this);
+        ThreadPool.getPool().execute(new FutureTask<DownloadInfo>(downloadTask){
+            @Override
+            protected void done() {
+                super.done();
+                try {
+                    DownloadInfo info = get();
+                    LogTools.d(TAG,"info:"+info.getmFileName());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     @Override
     public void taskCanceled() {
         LogTools.e(TAG, "taskCanceled");
         mHandler.sendEmptyMessage(UpdateHandler.MSG_TASK_CANCELED);
+        reset();
     }
 
     @Override
     public void onFinish() {
         LogTools.e(TAG, "onFinish");
         mHandler.sendEmptyMessage(UpdateHandler.MSG_DOWNLOAD_COMPLETE);
+        reset();
+    }
+
+    private void reset() {
+        isTaskStart = false;
+        isPause = false;
     }
 
     @Override
     public void onFailure(String error) {
         LogTools.e(TAG, "onFailure:" + error);
+        reset();
     }
 
     @Override
@@ -77,6 +133,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     public void onFileSize(long size) {
         float fileSize = size / (1024.0f * 1024.0f);
         LogTools.e(TAG, "fileSize:" + fileSize);
+        String resultSize = String.format("%.2f", fileSize);
         mHandler.obtainMessage(UpdateHandler.MSG_FILE_SIZE, fileSize).sendToTarget();
     }
 

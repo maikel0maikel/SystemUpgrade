@@ -12,15 +12,22 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 
 import com.sinohb.logger.LogTools;
+import com.sinohb.system.upgrade.presenter.DownloadController;
+import com.sinohb.system.upgrade.presenter.DownloadPresenter;
+import com.sinohb.system.upgrade.view.UpgradeDialog;
 
-public class DownloadService extends Service {
+public class DownloadService extends Service implements DownloadPresenter.View {
     private NetWorkReceiver receiver;
     private static final String TAG = "DownloadService";
+    private DownloadPresenter.Controller mPresenter;
+    private UpgradeDialog upgradeDialog;
 
     @Override
     public void onCreate() {
         super.onCreate();
         registReceiver();
+        new DownloadController(this);
+        upgradeDialog = new UpgradeDialog(this);
     }
 
     private void registReceiver() {
@@ -44,6 +51,60 @@ public class DownloadService extends Service {
             unregisterReceiver(receiver);
             receiver = null;
         }
+        if (mPresenter != null) {
+            mPresenter.onDestroy();
+        }
+
+    }
+
+    @Override
+    public void downloadProcess(int process) {
+
+    }
+
+    @Override
+    public void complete() {
+        upgradeDialog.show();
+    }
+
+    @Override
+    public void failure() {
+
+    }
+
+    @Override
+    public void notifyFileName(String fileName) {
+    }
+
+    @Override
+    public void notifyFileSize(float size) {
+
+    }
+
+    @Override
+    public void notifyTaskCanceled() {
+
+    }
+
+    @Override
+    public void start() {
+
+    }
+
+    @Override
+    public void pause() {
+
+    }
+
+    @Override
+    public void cancel() {
+
+    }
+
+    @Override
+    public void setPresenter(DownloadPresenter.Controller presenter) {
+        mPresenter = presenter;
+        mPresenter.start();
     }
 
     class NetWorkReceiver extends BroadcastReceiver {
@@ -57,9 +118,8 @@ public class DownloadService extends Service {
                 if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.LOLLIPOP) {
                     ConnectivityManager connMgr = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
                     NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
-                    if (networkInfo != null && networkInfo.isConnectedOrConnecting()) {
-
-                    }
+                    boolean isConnect = networkInfo != null && networkInfo.isConnectedOrConnecting();
+                    startTask(isConnect);
 //                    NetworkInfo wifiNetworkInfo = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
 //                    NetworkInfo dataNetworkInfo = connMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
 //                    if (wifiNetworkInfo.isConnected() && dataNetworkInfo.isConnected()) {
@@ -77,14 +137,25 @@ public class DownloadService extends Service {
                     Network[] networks = connMgr.getAllNetworks();
                     StringBuilder sb = new StringBuilder();
                     //通过循环将网络信息逐个取出来
+                    boolean isConnect = false;
                     for (int i = 0; i < networks.length; i++) {
                         NetworkInfo networkInfo = connMgr.getNetworkInfo(networks[i]);
                         if (networkInfo != null && networkInfo.isConnectedOrConnecting()) {
                             LogTools.e(TAG, networkInfo.getTypeName() + " connect is " + networkInfo.isConnected());
-                            return;
+                            isConnect = true;
+                            break;
                         }
                     }
+                    startTask(isConnect);
                 }
+            }
+        }
+
+        private void startTask(boolean isConnect) {
+            if (isConnect) {
+                mPresenter.download("http://downloadz.dewmobile.net/Official/Kuaiya482.apk");
+            } else if (mPresenter.isTaskStart()) {
+                mPresenter.pause();
             }
         }
     }
