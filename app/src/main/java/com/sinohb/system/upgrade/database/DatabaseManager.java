@@ -5,7 +5,7 @@ import android.database.sqlite.SQLiteDatabase;
 
 import com.sinohb.logger.LogTools;
 import com.sinohb.system.upgrade.UpgradeAppclition;
-import com.sinohb.system.upgrade.entity.DownloadInfo;
+import com.sinohb.system.upgrade.entity.DownloadEntity;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,10 +16,10 @@ public class DatabaseManager implements DatabaseManagerable {
     DatabaseHelper databaseHelper = new DatabaseHelper(UpgradeAppclition.getContext());
 
     @Override
-    public boolean insert(DownloadInfo info) {
+    public boolean insert(DownloadEntity info) {
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         try {
-            db.execSQL("insert into " + DatabaseHelper.TABLE_NAME + "(url,threadId,startIndex) values(?,?,?)", new Object[]{info.getmUrl(), info.getThreadId(), info.getStartDownLoadIndex()});
+            db.execSQL("insert into " + DatabaseHelper.TABLE_NAME + "(url,threadId,startIndex) values(?,?,?)", new Object[]{info.getmUrl(), info.getThreadId(), info.getDownloadStartIndex()});
             //db.close();
             return true;
         } catch (Exception e) {
@@ -29,10 +29,10 @@ public class DatabaseManager implements DatabaseManagerable {
     }
 
     @Override
-    public boolean update(DownloadInfo info) {
+    public boolean update(DownloadEntity info) {
         SQLiteDatabase db = databaseHelper.getWritableDatabase();
         try {
-            db.execSQL("UPDATE " + DatabaseHelper.TABLE_NAME + "  SET startIndex=? WHERE url=? AND threadId=?", new Object[]{info.getmUrl(), info.getThreadId(), info.getStartDownLoadIndex()});
+            db.execSQL("UPDATE " + DatabaseHelper.TABLE_NAME + "  SET startIndex=? WHERE url=? AND threadId=?", new Object[]{ info.getDownloadStartIndex(),info.getmUrl(), info.getThreadId()});
            // db.close();
             return true;
         } catch (Exception e) {
@@ -82,16 +82,16 @@ public class DatabaseManager implements DatabaseManagerable {
     }
 
     @Override
-    public DownloadInfo getDownloadInfo(String url, int threadId) {
+    public DownloadEntity getDownloadInfo(String url, int threadId) {
         SQLiteDatabase db = databaseHelper.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT url, threadId, startIndex FROM " + DatabaseHelper.TABLE_NAME + "  WHERE url=? AND threadId=?", new String[]{url, String.valueOf(threadId)});
         if (cursor != null) {
             if (cursor.moveToNext()) {
-                DownloadInfo downloadInfo = new DownloadInfo();
-                downloadInfo.setmUrl(cursor.getString(0));
-                downloadInfo.setThreadId(cursor.getInt(1));
-                downloadInfo.setStartDownLoadIndex(cursor.getLong(2));
-                return downloadInfo;
+                DownloadEntity downloadEntity = new DownloadEntity();
+                downloadEntity.setmUrl(cursor.getString(0));
+                downloadEntity.setThreadId(cursor.getInt(1));
+                downloadEntity.setDownloadStartIndex(cursor.getLong(2));
+                return downloadEntity;
             }
             cursor.close();
         }
@@ -101,22 +101,22 @@ public class DatabaseManager implements DatabaseManagerable {
     }
 
     @Override
-    public List<DownloadInfo> getDownloadInfos(String url) {
+    public List<DownloadEntity> getDownloadInfos(String url) {
         SQLiteDatabase db = databaseHelper.getReadableDatabase();
         Cursor cursor = db.rawQuery("SELECT url, threadId, startIndex FROM " + DatabaseHelper.TABLE_NAME + "  WHERE url=? ", new String[]{url});
         if (cursor != null) {
             int count = cursor.getCount();
-            List<DownloadInfo> downloadInfos = new ArrayList<>();
+            List<DownloadEntity> downloadEntities = new ArrayList<>();
             for (int i = 0; i < count; i++) {
                 cursor.moveToPosition(i);
-                DownloadInfo downloadInfo = new DownloadInfo();
-                downloadInfo.setmUrl(cursor.getString(0));
-                downloadInfo.setThreadId(cursor.getInt(1));
-                downloadInfo.setStartDownLoadIndex(cursor.getLong(2));
-                downloadInfos.add(downloadInfo);
+                DownloadEntity downloadEntity = new DownloadEntity();
+                downloadEntity.setmUrl(cursor.getString(0));
+                downloadEntity.setThreadId(cursor.getInt(1));
+                downloadEntity.setDownloadStartIndex(cursor.getLong(2));
+                downloadEntities.add(downloadEntity);
             }
             cursor.close();
-            return downloadInfos;
+            return downloadEntities;
         }
         //db.close();
         return null;

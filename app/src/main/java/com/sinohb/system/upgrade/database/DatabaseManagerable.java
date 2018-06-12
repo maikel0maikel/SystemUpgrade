@@ -1,14 +1,14 @@
 package com.sinohb.system.upgrade.database;
 
-import com.sinohb.system.upgrade.entity.DownloadInfo;
+import com.sinohb.system.upgrade.entity.DownloadEntity;
 
 import java.util.List;
 
 public interface DatabaseManagerable {
 
-    boolean insert(DownloadInfo info);
+    boolean insert(DownloadEntity info);
 
-    boolean update(DownloadInfo info);
+    boolean update(DownloadEntity info);
 
     boolean delete(String url, int threadId);
 
@@ -16,9 +16,9 @@ public interface DatabaseManagerable {
 
     boolean clear();
 
-    DownloadInfo getDownloadInfo(String url, int threadId);
+    DownloadEntity getDownloadInfo(String url, int threadId);
 
-    List<DownloadInfo> getDownloadInfos(String url);
+    List<DownloadEntity> getDownloadInfos(String url);
 
 
 }

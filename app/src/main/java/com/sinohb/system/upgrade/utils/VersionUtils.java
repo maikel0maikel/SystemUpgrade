@@ -41,7 +41,26 @@ public class VersionUtils {
                 LogTools.p(TAG, e.getMessage());
             }
         }
-
         return oemVersion;
     }
+
+    public static int getVersion(String oemVersion) {
+        //huabao-sq-h-v126-20180330
+        String[] rex = oemVersion.split("-");
+        String version = "0";
+        for (String v : rex) {
+            if (v.startsWith("v")) {
+                version = v.substring(1);
+                break;
+            }
+        }
+        int v = 0;
+        try {
+            v = Integer.parseInt(version);
+        }catch (Exception e){
+            LogTools.e(TAG,e,"版本获取失败");
+        }
+        return v;
+    }
+
 }

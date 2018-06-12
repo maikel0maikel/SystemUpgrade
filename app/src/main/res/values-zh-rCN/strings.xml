@@ -1,6 +1,5 @@
 <resources>
-    <string name="app_name">系统升级</string>
-    <string name="dialog_title">系统升级</string>
+    <string name="dialog_title">OEM升级</string>
     <string name="dialog_upgrade_label">马上升级</string>
     <string name="dialog_newest_version">最新版本：</string>
     <string name="dialog_newest_file_size">最新版本大小：</string>

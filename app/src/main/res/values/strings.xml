@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SystemUpgrade</string>
+    <string name="app_name">OEM Upgrade</string>
     <string name="dialog_title">System Upgrade</string>
     <string name="dialog_upgrade_label">Upgrade Now</string>
     <string name="dialog_newest_version">Latest version:</string>

@@ -2,7 +2,6 @@ package com.sinohb.system.upgrade.pool;
 
 
 import com.sinohb.logger.LogTools;
-import com.sinohb.system.upgrade.task.Downloader;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -37,7 +36,7 @@ public class ThreadPool {
 
         synchronized (mWorkerQueue) {
             mWorkerQueue.add(r);
-            mWorkerQueue.notify();
+            mWorkerQueue.notifyAll();
         }
     }
 
@@ -46,7 +45,7 @@ public class ThreadPool {
             for (Runnable r : tasks) {
                 mWorkerQueue.add(r);
             }
-            mWorkerQueue.notify();
+            mWorkerQueue.notifyAll();
         }
     }
     public void execute(Runnable[] tasks) {
@@ -54,7 +53,7 @@ public class ThreadPool {
             for (Runnable r : tasks) {
                 mWorkerQueue.add(r);
             }
-            mWorkerQueue.notify();
+            mWorkerQueue.notifyAll();
         }
     }
 
@@ -81,7 +80,7 @@ public class ThreadPool {
         @Override
         public void run() {
             Runnable r = null;
-            LogTools.e(TAG,"pool开始工作："+Thread.currentThread().getName());
+            LogTools.p(TAG,"pool开始工作："+Thread.currentThread().getName());
             while (isRun) {
                 synchronized (mWorkerQueue) {
                     while (isRun && mWorkerQueue.isEmpty()) {
@@ -100,6 +99,7 @@ public class ThreadPool {
                 }
                 r = null;
             }
+            LogTools.p(TAG,"pool结束工作："+Thread.currentThread().getName());
         }
 
         public void stopWork() {

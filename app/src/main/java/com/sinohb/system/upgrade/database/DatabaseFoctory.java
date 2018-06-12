@@ -1,6 +1,6 @@
 package com.sinohb.system.upgrade.database;
 
-import com.sinohb.system.upgrade.entity.DownloadInfo;
+import com.sinohb.system.upgrade.entity.DownloadEntity;
 
 import java.util.List;
 
@@ -22,11 +22,11 @@ public class DatabaseFoctory {
         manager = new DatabaseManager();
     }
 
-    public boolean insert(DownloadInfo info) {
+    public boolean insert(DownloadEntity info) {
         return manager.insert(info);
     }
 
-    public boolean update(DownloadInfo info) {
+    public boolean update(DownloadEntity info) {
         return manager.update(info);
     }
 
@@ -42,11 +42,11 @@ public class DatabaseFoctory {
         return manager.clear();
     }
 
-    public DownloadInfo getDownloadInfo(String url, int threadId) {
+    public DownloadEntity getDownloadInfo(String url, int threadId) {
         return manager.getDownloadInfo(url,threadId);
     }
 
-    public List<DownloadInfo> getDownloadInfos(String url) {
+    public List<DownloadEntity> getDownloadInfos(String url) {
         return manager.getDownloadInfos(url);
     }
 }

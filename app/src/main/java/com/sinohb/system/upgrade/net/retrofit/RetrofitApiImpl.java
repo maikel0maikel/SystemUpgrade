@@ -2,8 +2,7 @@ package com.sinohb.system.upgrade.net.retrofit;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.sinohb.system.upgrade.entity.Test;
-import com.sinohb.system.upgrade.entity.UpgradeInfo;
+import com.sinohb.system.upgrade.entity.UpgradeEntity;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -25,14 +24,14 @@ public class RetrofitApiImpl implements RetrofitApiable{
         upgradeApi = retrofit.create(IUpgradeApi.class);
     }
     @Override
-    public void getUpgradeInfo(Callback<UpgradeInfo> callback) {
-       Call<UpgradeInfo> request = upgradeApi.getUpgradeInfo();
+    public void getUpgradeInfo(Callback<UpgradeEntity> callback) {
+       Call<UpgradeEntity> request = upgradeApi.getUpgradeInfo();
         request.enqueue(callback);
     }
 
-    @Override
-    public void getFixrate(String access_key,Callback<Test>  callback) {
-        Call<Test>  request = upgradeApi.getFixrate(access_key,"1");
-        request.enqueue(callback);
-    }
+//    @Override
+//    public void getFixrate(String access_key,Callback<Test>  callback) {
+//        Call<Test>  request = upgradeApi.getFixrate(access_key,"1");
+//        request.enqueue(callback);
+//    }
 }

@@ -2,6 +2,7 @@ package com.sinohb.system.upgrade.presenter;
 
 import com.sinohb.system.upgrade.BasePresenter;
 import com.sinohb.system.upgrade.BaseView;
+import com.sinohb.system.upgrade.entity.UpgradeEntity;
 
 public interface DownloadPresenter {
 
@@ -15,10 +16,15 @@ public interface DownloadPresenter {
 
         void notifyFileName(String fileName);
 
-        void notifyFileSize(float size);
+        void notifyFileSize(String size);
 
         void notifyTaskCanceled();
 
+        void notifyUpgradeInfo(UpgradeEntity entity);
+
+        void notifyMD5(String md5);
+
+        void destroy();
     }
 
 
@@ -35,6 +41,8 @@ public interface DownloadPresenter {
         void taskCanceled();
 
         boolean isTaskStart();
+
+        void update();
     }
 
 }
