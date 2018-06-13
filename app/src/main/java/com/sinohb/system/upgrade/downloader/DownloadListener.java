@@ -21,4 +21,6 @@ public interface DownloadListener {
     void onTaskCancled();
 
     void onNoNewVersion();
+
+    void onDirectUpdate();
 }

@@ -78,4 +78,9 @@ public class HttpDownloadManager extends BaseDownloadManager {
         connection.setConnectTimeout(5000);
         return connection;
     }
+
+    @Override
+    public UpgradeEntity getDownloadInfo() {
+        return null;
+    }
 }

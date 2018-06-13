@@ -34,6 +34,11 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     }
 
     @Override
+    public boolean isPause() {
+        return downloadTask == null?false:downloadTask.isPause();
+    }
+
+    @Override
     public void update() {
         sendUpdateBroadcast();
         destroyView();
@@ -114,25 +119,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
             downloadTask.setListener(this);
         }
         isTaskStart = true;
-        ThreadPool.getPool().execute(new FutureTask<UpgradeEntity>(downloadTask) {
-            @Override
-            protected void done() {
-                super.done();
-                try {
-                    UpgradeEntity info = get();
-                    if (info != null) {
-                        LogTools.d(TAG, "info:" + info.getFileName());
-                        onFileName(info.getFileName());
-                        onFileSize(info.getFileSize());
-                        onUpgradeInfo(info);
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                } catch (ExecutionException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
+        ThreadPool.getPool().execute(new FutureTask<>(downloadTask));
     }
 
     @Override
@@ -188,7 +175,12 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
 
     @Override
     public void onUpgradeInfo(UpgradeEntity upgradeEntity) {
-        mHandler.obtainMessage(UpdateHandler.MSG_DOWNLOAD_INFO, upgradeEntity).sendToTarget();
+        if (upgradeEntity != null) {
+//            onFileName(upgradeEntity.getFileName());
+//            onFileSize(upgradeEntity.getFileSize());
+            mHandler.obtainMessage(UpdateHandler.MSG_DOWNLOAD_INFO, upgradeEntity).sendToTarget();
+        }
+
     }
 
     private void onFileSize(long size) {
@@ -212,6 +204,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     @Override
     public void onTaskCancled() {
         mHandler.sendEmptyMessage(UpdateHandler.MSG_TASK_CANCELED);
+        LogTools.p(TAG, "onTaskCancled");
         reset();
     }
 
@@ -219,6 +212,11 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     public void onNoNewVersion() {
         destroyView();
         reset();
+    }
+
+    @Override
+    public void onDirectUpdate() {
+        mHandler.sendEmptyMessage(UpdateHandler.MSG_DIRECT_UPDATE);
     }
 
     private static class UpdateHandler extends Handler {
@@ -231,6 +229,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
         static final int MSG_DOWNLOAD_FAILURE = 7;
         static final int MSG_DOWNLOAD_INFO = 8;
         static final int MSG_VERTIFY_MD5 = 9;
+        static final int MSG_DIRECT_UPDATE = 10;
         private WeakReference<DownloadController> controllerWeakReference;
 
         UpdateHandler(DownloadController controller) {
@@ -266,7 +265,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
                     controller.view.notifyTaskCanceled();
                     break;
                 case MSG_TASK_FINISHED:
-                    controller.view.notifyTaskCanceled();
+                    controller.view.complete();
                     break;
                 case MSG_DOWNLOAD_COMPLETE:
                     controller.view.complete();
@@ -283,6 +282,10 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
                     controller.view.notifyMD5(md5);
                     controller.reset();
                     controller.view.complete();
+                    break;
+                case MSG_DIRECT_UPDATE:
+                    controller.view.updateDirectly();
+                    controller.reset();
                     break;
             }
         }

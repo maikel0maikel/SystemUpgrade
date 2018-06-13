@@ -20,6 +20,7 @@ public abstract class BaseDownloadTask implements Runnable {
     protected boolean stop = false;
     protected DownloadProcessListener mProcessListener;
     private long fileSize;
+
     public BaseDownloadTask(String url, File file, long downloadSize, int id, DownloadProcessListener processListener, long fileSize) {
         this.mFile = file;
         this.downloadSize = downloadSize;
@@ -77,22 +78,22 @@ public abstract class BaseDownloadTask implements Runnable {
         long startIndex = (mTheadId - 1) * downloadSize;// 开始位置 = 已下载量
         if (info != null) {
             finishSize = info.getDownloadStartIndex();
-            info.setDoneSize(finishSize-startIndex);
+            info.setDoneSize(finishSize - startIndex);
         } else {
             info = new DownloadEntity();
             info.setThreadId(mTheadId);
             info.setmUrl(url);
             info.setDownloadStartIndex(0l);
             DatabaseFoctory.getInstance().insert(info);
-            finishSize =  startIndex;
+            finishSize = startIndex;
             info.setDoneSize(0l);
         }
-        if (finishSize == 0){
+        if (finishSize == 0) {
             finishSize = startIndex;
         }
         long endIndex = downloadSize * mTheadId - 1;
-         endIndex = endIndex  < fileSize ?
-                 endIndex: fileSize;
+        endIndex = endIndex < fileSize ?
+                endIndex : fileSize;
         LogTools.p("BaseDownloadTask", "startIndex=[" + finishSize + "],endIndex=[" + endIndex + "]");
         info.setDownloadStartIndex(finishSize);
         info.setDownloadEndIndex(endIndex);
@@ -109,7 +110,7 @@ public abstract class BaseDownloadTask implements Runnable {
         }
     }
 
-    protected void finishDownload(){
+    protected void finishDownload() {
         isFinish = true;
         DatabaseFoctory.getInstance().delete(url, mTheadId);
         LogTools.e(TAG, "下载任务完成：" + Thread.currentThread().getName());
@@ -118,12 +119,26 @@ public abstract class BaseDownloadTask implements Runnable {
         }
     }
 
-    protected void downloadFailure(String error){
-        DatabaseFoctory.getInstance().delete(url, mTheadId);
-        LogTools.e(TAG, "下载任务失败：" + Thread.currentThread().getName());
+//    protected void downloadFailure(String error) {
+//        DatabaseFoctory.getInstance().delete(url, mTheadId);
+//        LogTools.e(TAG, "下载任务失败：" + Thread.currentThread().getName());
+//        downloadNetWorkError(error);
+//    }
+    protected void updateProgress(DownloadEntity info, long finishSize) {
+        info.setDownloadStartIndex(finishSize);
+        DatabaseFoctory.getInstance().update(info);
+    }
+    protected void downloadNetWorkError(String error) {
         if (mProcessListener != null) {
             mProcessListener.onTaskFailure(error);
         }
+        reset();
     }
 
+    protected void reset(){
+        isPause = false;
+        isCancel = false;
+        isFinish = false;
+        stop = false;
+    }
 }

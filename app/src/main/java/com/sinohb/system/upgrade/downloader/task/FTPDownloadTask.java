@@ -43,9 +43,12 @@ public class FTPDownloadTask extends BaseDownloadTask {
             client.setFileType(org.apache.commons.net.ftp.FTP.BINARY_FILE_TYPE);
             client.enterLocalPassiveMode();
             client.setRestartOffset(start);
-            String remotePath = ((FTPDownloadManager)mProcessListener).getRemoteFilePath();
-            LogTools.p(TAG,"remotePath:"+remotePath);
+            String remotePath = ((FTPDownloadManager) mProcessListener).getRemoteFilePath();
+            LogTools.p(TAG, "remotePath:" + remotePath);
             in = client.retrieveFileStream(remotePath);
+            long downloadSize = end - start;
+            long doneSize = 0;
+            int progress;
             while ((len = in.read(buf)) != -1) {
                 if (finishSize + len > end) {
                     len = (int) (end - finishSize) + 1;
@@ -57,13 +60,18 @@ public class FTPDownloadTask extends BaseDownloadTask {
                 raf.write(buf, 0, len);
                 finishSize += len;
                 update(len);
+                doneSize += len;
+                progress = (int) (100 * doneSize / downloadSize);
+                if (progress >= 10) {
+                    updateProgress(info, finishSize);
+                    doneSize = 0;
+                }
                 if (isPause) {
-                    info.setDownloadStartIndex(finishSize);
-                    DatabaseFoctory.getInstance().update(info);
+                    updateProgress(info, finishSize);
                     LogTools.p(TAG, "进入暂停");
                     synchronized (sync) {
                         try {
-                            sync.wait();//暂停时该线程进入等待状态，并释放dao的锁
+                            sync.wait();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -81,22 +89,24 @@ public class FTPDownloadTask extends BaseDownloadTask {
                     return;
                 }
                 if (stop) {
-                    info.setDownloadStartIndex(finishSize);
-                    DatabaseFoctory.getInstance().update(info);
+                    updateProgress(info, finishSize);
                     LogTools.e(TAG, "停止下载");
                     return;
                 }
             }
             finishDownload();
         } catch (FileNotFoundException e) {
-            LogTools.e(TAG, e, "download failure url=" + url);
-            downloadFailure(e.getMessage());
+            LogTools.e(TAG, e, "下载任务失败 url=" + url);
+            updateProgress(info,finishSize);
+            downloadNetWorkError(e.getMessage());
         } catch (IOException e) {
-            LogTools.e(TAG, e, "download failure url=" + url);
-            downloadFailure(e.getMessage());
+            LogTools.e(TAG, e, "下载任务失败 url=" + url);
+            updateProgress(info,finishSize);
+            downloadNetWorkError(e.getMessage());
         } catch (Exception e) {
-            LogTools.e(TAG, e, "download failure url=" + url);
-            downloadFailure(e.getMessage());
+            LogTools.e(TAG, e, "下载任务失败 url=" + url);
+            updateProgress(info,finishSize);
+            downloadNetWorkError(e.getMessage());
         } finally {
             IOUtils.closeQuietly(raf);
             IOUtils.closeQuietly(in);
@@ -110,5 +120,7 @@ public class FTPDownloadTask extends BaseDownloadTask {
         }
 
     }
+
+
 
 }

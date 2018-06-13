@@ -25,6 +25,7 @@ public class DownloadService extends Service implements DownloadPresenter.View {
     private UpgradeDialog upgradeDialog;
     private String remoteMd5;
     private static final String DOWNLOAD_URL = "ftp://183.62.139.91:40000/upgrade/HibosAndroidProject/SQ-L/SQ-L.txt";
+    private int currentProcess = 0;
 
     @Override
     public void onCreate() {
@@ -35,7 +36,7 @@ public class DownloadService extends Service implements DownloadPresenter.View {
 
     private void init() {
         new DownloadController(this);
-        upgradeDialog = new UpgradeDialog(this,mPresenter);
+        upgradeDialog = new UpgradeDialog(this, mPresenter);
     }
 
     private void registReceiver() {
@@ -55,7 +56,7 @@ public class DownloadService extends Service implements DownloadPresenter.View {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        LogTools.p(TAG,"服务已经销毁");
+        LogTools.p(TAG, "服务已经销毁");
         if (receiver != null) {
             unregisterReceiver(receiver);
             receiver = null;
@@ -70,32 +71,38 @@ public class DownloadService extends Service implements DownloadPresenter.View {
 
     @Override
     public void downloadProcess(int process) {
-
+        if (currentProcess != process) {
+            currentProcess = process;
+            LogTools.p(TAG, "已经下载:" + process);
+        }
     }
 
     @Override
     public void complete() {
-        LogTools.p(TAG,"下载完成");
+        LogTools.p(TAG, "下载完成");
+        currentProcess = 0;
     }
 
     @Override
     public void failure() {
-        LogTools.p(TAG,"下载失败");
+        LogTools.p(TAG, "下载失败");
+        currentProcess = 0;
     }
 
     @Override
     public void notifyFileName(String fileName) {
-        LogTools.p(TAG,"下载的文件名："+fileName);
+        LogTools.p(TAG, "下载的文件名：" + fileName);
     }
 
     @Override
     public void notifyFileSize(String size) {
-        LogTools.p(TAG,"下载的文件大小："+size);
+        LogTools.p(TAG, "下载的文件大小：" + size);
     }
 
     @Override
     public void notifyTaskCanceled() {
-        LogTools.p(TAG,"任务取消");
+        LogTools.p(TAG, "任务取消");
+        currentProcess = 0;
     }
 
     @Override
@@ -108,8 +115,8 @@ public class DownloadService extends Service implements DownloadPresenter.View {
             upgradeDialog.setVersion(entity.getVersion());
             upgradeDialog.setUpdateContent(entity.getReleaseNotes());
             remoteMd5 = entity.getMD5();
-        }else {
-            LogTools.p(TAG,"notifyUpgradeInfo 获取为空");
+        } else {
+            LogTools.p(TAG, "notifyUpgradeInfo 获取为空");
         }
     }
 
@@ -118,14 +125,20 @@ public class DownloadService extends Service implements DownloadPresenter.View {
         if (md5 != null && md5.length() > 0 && md5.equalsIgnoreCase(remoteMd5)) {
             upgradeDialog.show();
         } else {
-            LogTools.p(TAG,"md5校验不通过");
+            LogTools.p(TAG, "md5校验不通过");
         }
+    }
+
+    @Override
+    public void updateDirectly() {
+        upgradeDialog.show();
+
     }
 
     @Override
     public void destroy() {
         stopSelf();
-        LogTools.p(TAG,"销毁服务");
+        LogTools.p(TAG, "销毁服务");
     }
 
     @Override
@@ -147,7 +160,7 @@ public class DownloadService extends Service implements DownloadPresenter.View {
     public void setPresenter(DownloadPresenter.Controller presenter) {
         mPresenter = presenter;
         mPresenter.start();
-        LogTools.p(TAG,"setPresenter开始任务");
+        LogTools.p(TAG, "setPresenter开始任务");
         startTask(NetWorkUtils.isNetWorkAvailable(this));
     }
 
@@ -183,11 +196,18 @@ public class DownloadService extends Service implements DownloadPresenter.View {
     }
 
     private synchronized void startTask(boolean isConnect) {
-        if (isConnect && !mPresenter.isTaskStart()) {
-            LogTools.p(TAG, "网络已连接开始下载:" + DOWNLOAD_URL);
-            mPresenter.download(DOWNLOAD_URL);
+        if (isConnect) {
+            if (mPresenter.isTaskStart() && mPresenter.isPause()) {
+                mPresenter.resume();
+                LogTools.p(TAG, "网络已连接恢复下载:" + DOWNLOAD_URL);
+            } else if (!mPresenter.isTaskStart()) {
+                mPresenter.download(DOWNLOAD_URL);
+                LogTools.p(TAG, "网络已连接开始下载:" + DOWNLOAD_URL);
+            }else {
+                LogTools.p(TAG, "任务已经开始了-----");
+            }
         } else if (mPresenter.isTaskStart()) {
-            LogTools.p(TAG, "网络断开停止下载 isConnect:" + isConnect+",isTaskStart:"+mPresenter.isTaskStart());
+            LogTools.p(TAG, "网络断开停止下载 isConnect:" + isConnect + ",isTaskStart:" + mPresenter.isTaskStart());
             mPresenter.pause();
         }
     }

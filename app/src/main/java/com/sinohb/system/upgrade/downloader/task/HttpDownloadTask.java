@@ -75,11 +75,13 @@ public class HttpDownloadTask extends BaseDownloadTask {
             }
             finishDownload();
         } catch (IOException e) {
-            LogTools.e(TAG, e, "download failure url=" + url);
-            downloadFailure(e.getMessage());
+            LogTools.e(TAG, e, "下载任务失败 url=" + url);
+            updateProgress(info,finishSize);
+            downloadNetWorkError(e.getMessage());
         } catch (Exception e) {
-            LogTools.e(TAG, e, "download failure url=" + url);
-            downloadFailure(e.getMessage());
+            LogTools.e(TAG, e, "下载任务失败 url=" + url);
+            updateProgress(info,finishSize);
+            downloadNetWorkError(e.getMessage());
         } finally {
             IOUtils.closeQuietly(in);
             IOUtils.closeQuietly(raf);

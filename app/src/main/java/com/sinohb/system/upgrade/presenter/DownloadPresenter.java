@@ -24,6 +24,8 @@ public interface DownloadPresenter {
 
         void notifyMD5(String md5);
 
+        void updateDirectly();
+
         void destroy();
     }
 
@@ -41,6 +43,8 @@ public interface DownloadPresenter {
         void taskCanceled();
 
         boolean isTaskStart();
+
+        boolean isPause();
 
         void update();
     }

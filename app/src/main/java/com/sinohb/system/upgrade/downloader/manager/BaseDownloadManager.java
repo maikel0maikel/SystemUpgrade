@@ -26,8 +26,14 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
     protected String url;
     private DownloadListener mListener;
     private String mDownloadFilePath;
-
+    private boolean isPause = false;
     public abstract Object connect(String url) throws IOException;
+
+    public abstract UpgradeEntity getDownloadInfo() throws IOException;
+
+    public  boolean isPause(){
+        return isPause;
+    }
 
     public BaseDownloadManager(String url) {
         this.url = url;
@@ -45,7 +51,7 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
         }
     }
 
-    protected void noNewVersion(){
+    protected void noNewVersion() {
         if (mListener != null) {
             mListener.onNoNewVersion();
         }
@@ -118,6 +124,7 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
                 BaseDownloadTask downloaderTask = (BaseDownloadTask) task;
                 if (!downloaderTask.isFinish()) {
                     downloaderTask.setPause(true);
+                    isPause = true;
                 }
             }
         }
@@ -129,6 +136,7 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
                 BaseDownloadTask downloaderTask = (BaseDownloadTask) task;
                 if (downloaderTask.isPause() && !downloaderTask.isFinish()) {
                     downloaderTask.setPause(false);
+                    isPause = false;
                 }
             }
         }
@@ -164,11 +172,26 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
         }
     }
 
+    protected void notifyUpdateInfo(UpgradeEntity entity) {
+        LogTools.p(TAG, "--下载信息--");
+        if (mListener != null) {
+            mListener.onUpgradeInfo(entity);
+        }
+    }
+
+    protected void notifyUpgrade() {
+        LogTools.p(TAG, "通知直接弹出升级框");
+        if (mListener != null) {
+            mListener.onDirectUpdate();
+        }
+    }
+
     protected void startDownload(String url, File mDownloadFile) throws IOException {
 //        File mDownloadFile = new File(UpgradeConstants.DOWNLOAD_PATH, fileName);
 //        if (!mDownloadFile.getParentFile().exists()) {
 //            mDownloadFile.getParentFile().mkdirs();
 //        }
+        isPause = false;
         mDownloadFilePath = mDownloadFile.getAbsolutePath();
         LogTools.p(TAG, "下载路径：" + mDownloadFilePath);
         RandomAccessFile raf = new RandomAccessFile(mDownloadFile, "rws");

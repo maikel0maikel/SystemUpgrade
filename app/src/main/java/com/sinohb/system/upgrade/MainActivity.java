@@ -1,5 +1,6 @@
 package com.sinohb.system.upgrade;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -15,6 +16,7 @@ import com.sinohb.system.upgrade.net.okhttp.OkhttpFactory;
 import com.sinohb.system.upgrade.pool.ThreadPool;
 import com.sinohb.system.upgrade.presenter.DownloadController;
 import com.sinohb.system.upgrade.presenter.DownloadPresenter;
+import com.sinohb.system.upgrade.service.DownloadService;
 import com.sinohb.system.upgrade.view.UpgradeDialog;
 
 import java.io.IOException;
@@ -42,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
 //        RecoverySystem.installPackage();
         initView();
         new DownloadController(this);
-       // startService(new Intent(this, DownloadService.class));
+        startService(new Intent(this, DownloadService.class));
         upgradeDialog = new UpgradeDialog(this,presenter);
     }
 
@@ -64,6 +66,9 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
     @Override
     public void downloadProcess(int process) {
         progressBar.setProgress(process);
+        if (process%10==0){
+            LogTools.p(TAG,"已经下载："+process);
+        }
     }
 
     @Override
@@ -107,16 +112,25 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
             upgradeDialog.setVersion(entity.getVersion());
             upgradeDialog.setUpdateContent(""+entity.getReleaseNotes());
             remoteMd5 = entity.getMD5();
+            String text = nameTv.getText().toString();
+            nameTv.setText(text + entity.getFileName());
+            sizeTv.setText("文件大小：" + resultSize + "M");
         }
     }
 
     @Override
     public void notifyMD5(String md5) {
-        if (md5!=null&&md5.length()>0&&md5.equals(remoteMd5)){
+//        if (md5!=null&&md5.length()>0&&md5.equals(remoteMd5)){
             upgradeDialog.show();
-        }else {
-            Toast.makeText(this,"文件校验失败",Toast.LENGTH_SHORT).show();
-        }
+//        }else {
+//            Toast.makeText(this,"文件校验失败",Toast.LENGTH_SHORT).show();
+//        }
+    }
+
+    @Override
+    public void updateDirectly() {
+        upgradeDialog.show();
+        reset();
     }
 
     @Override
@@ -165,13 +179,13 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
     public void click(View view) {
         switch (view.getId()) {
             case R.id.downLoadBt:
-//                String httpUrl = "http://downloadz.dewmobile.net/Official/Kuaiya482.apk";
-//                String ftpUrl = "ftp://183.62.139.91:40000/upgrade/HibosAndroidProject/SQZT/SQZT.txt";
-//                this.presenter.download(httpUrl);
-//                pauseTv.setEnabled(true);
-//                cancelTv.setEnabled(true);
-//                resumeTV.setEnabled(false);
-                vertify();
+                String httpUrl = "http://downloadz.dewmobile.net/Official/Kuaiya482.apk";
+                String ftpUrl = "ftp://183.62.139.91:40000/upgrade/HibosAndroidProject/SQ-L/SQ-L.txt";
+                this.presenter.download(httpUrl);
+                pauseTv.setEnabled(true);
+                cancelTv.setEnabled(true);
+                resumeTV.setEnabled(false);
+                //vertify();
                 //sendRequest();
                 break;
             case R.id.pauseBt:
@@ -190,7 +204,7 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
                 //sendRequest();
                 break;
         }
-       // view.setEnabled(false);
+        view.setEnabled(false);
     }
 
     private void sendRequest() {
