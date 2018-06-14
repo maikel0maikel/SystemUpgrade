@@ -62,13 +62,14 @@ public class HttpDownloadTask extends BaseDownloadTask {
                         }
                     }
                     if (isCancel) {
-                        cancelDownload(info);
+                        cancelDownload();
                         return;
                     }
                     if (stop) {
                         info.setDownloadStartIndex(finishSize);
                         DatabaseFoctory.getInstance().update(info);
                         LogTools.e(TAG, "停止下载");
+                        stopTask(this);
                         return;
                     }
                 }
@@ -77,11 +78,11 @@ public class HttpDownloadTask extends BaseDownloadTask {
         } catch (IOException e) {
             LogTools.e(TAG, e, "下载任务失败 url=" + url);
             updateProgress(info,finishSize);
-            downloadNetWorkError(e.getMessage());
+            downloadNetWorkError(this,e.getMessage());
         } catch (Exception e) {
             LogTools.e(TAG, e, "下载任务失败 url=" + url);
             updateProgress(info,finishSize);
-            downloadNetWorkError(e.getMessage());
+            downloadNetWorkError(this,e.getMessage());
         } finally {
             IOUtils.closeQuietly(in);
             IOUtils.closeQuietly(raf);

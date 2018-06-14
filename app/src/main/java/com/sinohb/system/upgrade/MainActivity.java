@@ -3,6 +3,7 @@ package com.sinohb.system.upgrade;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -36,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
     private TextView downloadTv, pauseTv, resumeTV, cancelTv;
     private UpgradeDialog upgradeDialog;
     private String remoteMd5;
+    private int currentProcess = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,8 +46,10 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
 //        RecoverySystem.installPackage();
         initView();
         new DownloadController(this);
-        startService(new Intent(this, DownloadService.class));
+        //startService(new Intent(this, DownloadService.class));
         upgradeDialog = new UpgradeDialog(this,presenter);
+        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        LogTools.p(TAG,"w:"+displayMetrics.widthPixels+",h:"+displayMetrics.heightPixels);
     }
 
     private void initView() {
@@ -65,15 +69,16 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
 
     @Override
     public void downloadProcess(int process) {
-        progressBar.setProgress(process);
-        if (process%10==0){
-            LogTools.p(TAG,"已经下载："+process);
+        if (currentProcess != process) {
+            currentProcess = process;
+            LogTools.p(TAG, "已经下载:" + process);
+            progressBar.setProgress(process);
         }
     }
 
     @Override
     public void complete() {
-        reset();
+
 //        startActivity(new Intent(this, UpgradeActivity.class));
 //        new UpgradeDialog(this).show();
        // upgradeDialog.show();
@@ -119,12 +124,13 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
     }
 
     @Override
-    public void notifyMD5(String md5) {
+    public void notifyVertifyOK() {
 //        if (md5!=null&&md5.length()>0&&md5.equals(remoteMd5)){
             upgradeDialog.show();
 //        }else {
 //            Toast.makeText(this,"文件校验失败",Toast.LENGTH_SHORT).show();
 //        }
+        reset();
     }
 
     @Override
@@ -180,8 +186,8 @@ public class MainActivity extends AppCompatActivity implements DownloadPresenter
         switch (view.getId()) {
             case R.id.downLoadBt:
                 String httpUrl = "http://downloadz.dewmobile.net/Official/Kuaiya482.apk";
-                String ftpUrl = "ftp://183.62.139.91:40000/upgrade/HibosAndroidProject/SQ-L/SQ-L.txt";
-                this.presenter.download(httpUrl);
+                String ftpUrl = "ftp://183.62.139.91:40000/upgrade/HibosAndroidProject/SQZT/SQZT.txt";
+                this.presenter.download(ftpUrl);
                 pauseTv.setEnabled(true);
                 cancelTv.setEnabled(true);
                 resumeTV.setEnabled(false);

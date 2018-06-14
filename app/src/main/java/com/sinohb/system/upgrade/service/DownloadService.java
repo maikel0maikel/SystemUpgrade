@@ -23,7 +23,7 @@ public class DownloadService extends Service implements DownloadPresenter.View {
     private static final String TAG = "DownloadService";
     private DownloadPresenter.Controller mPresenter;
     private UpgradeDialog upgradeDialog;
-    private String remoteMd5;
+//    private String remoteMd5;
     private static final String DOWNLOAD_URL = "ftp://183.62.139.91:40000/upgrade/HibosAndroidProject/SQ-L/SQ-L.txt";
     private int currentProcess = 0;
 
@@ -85,8 +85,9 @@ public class DownloadService extends Service implements DownloadPresenter.View {
 
     @Override
     public void failure() {
-        LogTools.p(TAG, "下载失败");
+        LogTools.p(TAG, "下载失败退出服务");
         currentProcess = 0;
+        stopSelf();
     }
 
     @Override
@@ -114,25 +115,27 @@ public class DownloadService extends Service implements DownloadPresenter.View {
             upgradeDialog.setVersionSize("" + resultSize + "M");
             upgradeDialog.setVersion(entity.getVersion());
             upgradeDialog.setUpdateContent(entity.getReleaseNotes());
-            remoteMd5 = entity.getMD5();
         } else {
             LogTools.p(TAG, "notifyUpgradeInfo 获取为空");
         }
     }
 
     @Override
-    public void notifyMD5(String md5) {
-        if (md5 != null && md5.length() > 0 && md5.equalsIgnoreCase(remoteMd5)) {
-            upgradeDialog.show();
-        } else {
-            LogTools.p(TAG, "md5校验不通过");
-        }
+    public void notifyVertifyOK() {
+        showUpgradeDialog();
+
     }
 
     @Override
     public void updateDirectly() {
-        upgradeDialog.show();
+        showUpgradeDialog();
 
+    }
+
+    private void showUpgradeDialog() {
+        if (upgradeDialog!=null&&!upgradeDialog.isShowing()){
+            upgradeDialog.show();
+        }
     }
 
     @Override

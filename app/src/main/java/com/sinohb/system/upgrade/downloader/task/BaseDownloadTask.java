@@ -92,17 +92,16 @@ public abstract class BaseDownloadTask implements Runnable {
             finishSize = startIndex;
         }
         long endIndex = downloadSize * mTheadId - 1;
-        endIndex = endIndex < fileSize ?
-                endIndex : fileSize;
-        LogTools.p("BaseDownloadTask", "startIndex=[" + finishSize + "],endIndex=[" + endIndex + "]");
+        endIndex = (endIndex + 1) >= fileSize ?
+                fileSize : endIndex;
+        LogTools.p("BaseDownloadTask", "startIndex=[" + finishSize + "],endIndex=[" + endIndex + "],done:"+info.getDoneSize());
         info.setDownloadStartIndex(finishSize);
         info.setDownloadEndIndex(endIndex);
         return info;
     }
 
-    protected void cancelDownload(DownloadEntity info) {
-        info.setDownloadStartIndex(0l);
-        DatabaseFoctory.getInstance().update(info);
+    protected void cancelDownload() {
+        DatabaseFoctory.getInstance().delete(url, mTheadId);
         isFinish = true;
         LogTools.e(TAG, "取消下载");
         if (mProcessListener != null) {
@@ -119,7 +118,7 @@ public abstract class BaseDownloadTask implements Runnable {
         }
     }
 
-//    protected void downloadFailure(String error) {
+    //    protected void downloadFailure(String error) {
 //        DatabaseFoctory.getInstance().delete(url, mTheadId);
 //        LogTools.e(TAG, "下载任务失败：" + Thread.currentThread().getName());
 //        downloadNetWorkError(error);
@@ -128,14 +127,21 @@ public abstract class BaseDownloadTask implements Runnable {
         info.setDownloadStartIndex(finishSize);
         DatabaseFoctory.getInstance().update(info);
     }
-    protected void downloadNetWorkError(String error) {
+
+    protected void downloadNetWorkError(BaseDownloadTask task, String error) {
         if (mProcessListener != null) {
-            mProcessListener.onTaskFailure(error);
+            mProcessListener.onTaskFailure(task, error);
         }
         reset();
     }
 
-    protected void reset(){
+    protected void stopTask(BaseDownloadTask task) {
+        if (mProcessListener != null) {
+            mProcessListener.onTaskStoped(task);
+        }
+    }
+
+    protected void reset() {
         isPause = false;
         isCancel = false;
         isFinish = false;

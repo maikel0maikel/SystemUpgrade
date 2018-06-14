@@ -33,7 +33,7 @@ public class ThreadPool {
     }
 
     public void execute(Runnable r) {
-
+        LogTools.p(TAG, "队列加入任务:" + r.getClass().getSimpleName());
         synchronized (mWorkerQueue) {
             mWorkerQueue.add(r);
             mWorkerQueue.notifyAll();
@@ -48,6 +48,7 @@ public class ThreadPool {
             mWorkerQueue.notifyAll();
         }
     }
+
     public void execute(Runnable[] tasks) {
         synchronized (mWorkerQueue) {
             for (Runnable r : tasks) {
@@ -80,7 +81,7 @@ public class ThreadPool {
         @Override
         public void run() {
             Runnable r = null;
-            LogTools.p(TAG,"pool开始工作："+Thread.currentThread().getName());
+            LogTools.p(TAG, "pool开始工作：" + Thread.currentThread().getName());
             while (isRun) {
                 synchronized (mWorkerQueue) {
                     while (isRun && mWorkerQueue.isEmpty()) {
@@ -99,7 +100,7 @@ public class ThreadPool {
                 }
                 r = null;
             }
-            LogTools.p(TAG,"pool结束工作："+Thread.currentThread().getName());
+            LogTools.p(TAG, "pool结束工作：" + Thread.currentThread().getName());
         }
 
         public void stopWork() {

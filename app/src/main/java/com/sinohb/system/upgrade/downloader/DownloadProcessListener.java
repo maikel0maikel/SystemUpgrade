@@ -6,5 +6,6 @@ public interface DownloadProcessListener {
     void onDoneSize(long size);
     void onTaskFinished(BaseDownloadTask downloader);
     void onTaskCancel(BaseDownloadTask downloader);
-    void onTaskFailure(String error);
+    void onTaskFailure(BaseDownloadTask task,String error);
+    void onTaskStoped(BaseDownloadTask task);
 }

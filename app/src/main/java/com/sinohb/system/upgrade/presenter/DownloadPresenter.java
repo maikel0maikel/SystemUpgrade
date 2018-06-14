@@ -22,7 +22,7 @@ public interface DownloadPresenter {
 
         void notifyUpgradeInfo(UpgradeEntity entity);
 
-        void notifyMD5(String md5);
+        void notifyVertifyOK();
 
         void updateDirectly();
 

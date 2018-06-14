@@ -35,7 +35,8 @@ public class HttpDownloadManager extends BaseDownloadManager {
                 if (!mDownloadFile.getParentFile().exists()) {
                     mDownloadFile.getParentFile().mkdirs();
                 }
-                if (mDownloadFile.exists()){
+                notifyUpdateInfo(upgradeEntity);
+                if (mDownloadFile.exists()&&mDownloadFile.length()==mFileSize){
 //                    String localMd5 = null;
 //                    try {
 //                        localMd5 = VertifyUtils.getMD5(mDownloadFile.getAbsolutePath());
@@ -49,7 +50,10 @@ public class HttpDownloadManager extends BaseDownloadManager {
 //                        return upgradeEntity;
 //                    }
                     onDoneSize(mDownloadFile.length());
+                    LogTools.p(TAG,"文件存在不下载");
                     return upgradeEntity;
+                }else {
+                    LogTools.p(TAG,"本地文件存在md5校验不通过或者文件大小为0需下载");
                 }
                 startDownload(url,mDownloadFile);
             }

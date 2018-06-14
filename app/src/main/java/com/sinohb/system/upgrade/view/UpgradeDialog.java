@@ -44,7 +44,7 @@ public class UpgradeDialog extends Dialog implements View.OnClickListener {
         View rootView = getLayoutInflater().inflate(R.layout.dialog_upgrade, null, false);
         setContentView(rootView);
         getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
-        getWindow().setLayout(WindowManager.LayoutParams.WRAP_CONTENT, (int) getContext().getResources().getDimension(R.dimen.y360));
+        getWindow().setLayout((int) getContext().getResources().getDimension(R.dimen.x450), (int) getContext().getResources().getDimension(R.dimen.y400));
         initView(rootView);
     }
 

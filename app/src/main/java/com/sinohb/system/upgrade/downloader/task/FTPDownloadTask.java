@@ -51,10 +51,11 @@ public class FTPDownloadTask extends BaseDownloadTask {
             int progress;
             while ((len = in.read(buf)) != -1) {
                 if (finishSize + len > end) {
-                    len = (int) (end - finishSize) + 1;
+                    len = (int) (end - finishSize)+1;
                     raf.write(buf, 0, len);
                     update(len);
                     finishDownload();
+                    LogTools.p(TAG,"修正：finishSize:"+finishSize+",len:"+len);
                     return;
                 }
                 raf.write(buf, 0, len);
@@ -62,7 +63,7 @@ public class FTPDownloadTask extends BaseDownloadTask {
                 update(len);
                 doneSize += len;
                 progress = (int) (100 * doneSize / downloadSize);
-                if (progress >= 10) {
+                if (progress >= 5) {
                     updateProgress(info, finishSize);
                     doneSize = 0;
                 }
@@ -85,12 +86,13 @@ public class FTPDownloadTask extends BaseDownloadTask {
                     }
                 }
                 if (isCancel) {
-                    cancelDownload(info);
+                    cancelDownload();
                     return;
                 }
                 if (stop) {
                     updateProgress(info, finishSize);
                     LogTools.e(TAG, "停止下载");
+                    stopTask(this);
                     return;
                 }
             }
@@ -98,15 +100,15 @@ public class FTPDownloadTask extends BaseDownloadTask {
         } catch (FileNotFoundException e) {
             LogTools.e(TAG, e, "下载任务失败 url=" + url);
             updateProgress(info,finishSize);
-            downloadNetWorkError(e.getMessage());
+            downloadNetWorkError(this,e.getMessage());
         } catch (IOException e) {
             LogTools.e(TAG, e, "下载任务失败 url=" + url);
             updateProgress(info,finishSize);
-            downloadNetWorkError(e.getMessage());
+            downloadNetWorkError(this,e.getMessage());
         } catch (Exception e) {
             LogTools.e(TAG, e, "下载任务失败 url=" + url);
             updateProgress(info,finishSize);
-            downloadNetWorkError(e.getMessage());
+            downloadNetWorkError(this,e.getMessage());
         } finally {
             IOUtils.closeQuietly(raf);
             IOUtils.closeQuietly(in);

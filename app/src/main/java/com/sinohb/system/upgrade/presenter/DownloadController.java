@@ -13,7 +13,9 @@ import com.sinohb.system.upgrade.pool.ThreadPool;
 import com.sinohb.system.upgrade.downloader.DownloadListener;
 import com.sinohb.system.upgrade.downloader.manager.BaseDownloadManager;
 import com.sinohb.system.upgrade.downloader.manager.SimpleDownloadFactory;
+import com.sinohb.system.upgrade.utils.JsonUtils;
 
+import java.io.File;
 import java.lang.ref.WeakReference;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
@@ -27,7 +29,8 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     private boolean isTaskStart = false;
     private boolean isPause = false;
     private String storePath;
-
+    private int mTryTimes = 0;
+    private String remoteMd5;
     @Override
     public boolean isTaskStart() {
         return isTaskStart;
@@ -65,6 +68,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     @Override
     public void start() {
         mHandler = new UpdateHandler(this);
+        reset();
     }
 
     @Override
@@ -108,6 +112,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     @Override
     public void download(String url) {
         if (isTaskStart) {
+            LogTools.e(TAG,"任务没有去下载：isTaskStart="+isTaskStart);
             return;
         }
         startDownload(url);
@@ -118,8 +123,34 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
             downloadTask = SimpleDownloadFactory.createTask(url);
             downloadTask.setListener(this);
         }
+        realStartDownloadTask();
+    }
+
+    private void realStartDownloadTask() {
+        if (downloadTask == null){
+            LogTools.e(TAG,"任务为空请检查");
+            return;
+        }
         isTaskStart = true;
-        ThreadPool.getPool().execute(new FutureTask<>(downloadTask));
+        ThreadPool.getPool().execute(new FutureTask<UpgradeEntity>(downloadTask){
+            @Override
+            protected void done() {
+                super.done();
+                try {
+                    UpgradeEntity entity = get();
+                    if (entity!=null){
+                        remoteMd5 = entity.getMD5();
+                        LogTools.p(TAG,"从服务器获取的下载信息:"+ JsonUtils.toJson(entity));
+                    }else {
+                        LogTools.p(TAG,"从服务器获取的下载信息:null");
+                    }
+                } catch (InterruptedException e) {
+                    LogTools.p(TAG,e,"从服务器获取的下载信息出错");
+                } catch (ExecutionException e) {
+                    LogTools.p(TAG,e,"从服务器获取的下载信息出错");
+                }
+            }
+        });
     }
 
     @Override
@@ -132,13 +163,14 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     private void reset() {
         isTaskStart = false;
         isPause = false;
+        mTryTimes = 0;
     }
 
     @Override
     public void onFinish(String downloadFilePath) {
         LogTools.e(TAG, "onFinish");
-        vertifyFile(downloadFilePath);
         storePath = downloadFilePath;
+        vertifyFile(downloadFilePath);
     }
 
     private void vertifyFile(final String downloadFilePath) {
@@ -150,21 +182,42 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
                 try {
                     MD5 = get();
                     LogTools.p(TAG, "MD5=" + MD5);
+                    if (MD5 != null && MD5.length() > 0 && MD5.equalsIgnoreCase(remoteMd5)) {
+                        mHandler.sendEmptyMessage(UpdateHandler.MSG_VERTIFY_MD5_OK);
+                        LogTools.p(TAG, "md5校验通过弹出升级框");
+                    } else {
+                        File file = new File(downloadFilePath);
+                        LogTools.p(TAG, "md5校验不通过删除下载文件重新开始下载大小："+file.length()+",路径：downloadFilePath="+downloadFilePath);
+                        file.delete();
+                        //onFailure("md5校验不通过");
+                    }
                 } catch (InterruptedException e) {
                     LogTools.e(TAG, e, "获取文件md5失败路径：" + downloadFilePath);
+                    onFailure("获取文件md5失败");
                 } catch (ExecutionException e) {
                     LogTools.e(TAG, e, "获取文件md5失败路径：" + downloadFilePath);
+                    onFailure("获取文件md5失败");
                 }
-                mHandler.obtainMessage(UpdateHandler.MSG_VERTIFY_MD5, MD5).sendToTarget();
             }
         });
     }
 
     @Override
     public void onFailure(String error) {
-        LogTools.e(TAG, "onFailure:" + error);
-        mHandler.sendEmptyMessage(UpdateHandler.MSG_DOWNLOAD_FAILURE);
-        reset();
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e1) {
+            e1.printStackTrace();
+        }
+        mTryTimes++;
+        if (mTryTimes == 3){
+            mHandler.sendEmptyMessage(UpdateHandler.MSG_DOWNLOAD_FAILURE);
+            reset();
+            LogTools.e(TAG, "尝试3次下载失败退出下载服务" + error);
+        }else {
+            LogTools.p(TAG,"下载失败尝试第"+mTryTimes+"次");
+            realStartDownloadTask();
+        }
     }
 
     @Override
@@ -228,7 +281,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
         static final int MSG_DOWNLOAD_COMPLETE = 6;
         static final int MSG_DOWNLOAD_FAILURE = 7;
         static final int MSG_DOWNLOAD_INFO = 8;
-        static final int MSG_VERTIFY_MD5 = 9;
+        static final int MSG_VERTIFY_MD5_OK = 9;
         static final int MSG_DIRECT_UPDATE = 10;
         private WeakReference<DownloadController> controllerWeakReference;
 
@@ -277,11 +330,9 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
                     UpgradeEntity upgradeEntity = (UpgradeEntity) msg.obj;
                     controller.view.notifyUpgradeInfo(upgradeEntity);
                     break;
-                case MSG_VERTIFY_MD5:
-                    String md5 = (String) msg.obj;
-                    controller.view.notifyMD5(md5);
+                case MSG_VERTIFY_MD5_OK:
+                    controller.view.notifyVertifyOK();
                     controller.reset();
-                    controller.view.complete();
                     break;
                 case MSG_DIRECT_UPDATE:
                     controller.view.updateDirectly();

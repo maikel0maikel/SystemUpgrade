@@ -27,11 +27,13 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
     private DownloadListener mListener;
     private String mDownloadFilePath;
     private boolean isPause = false;
+    private boolean isTaskFailure = false;
+
     public abstract Object connect(String url) throws IOException;
 
     public abstract UpgradeEntity getDownloadInfo() throws IOException;
 
-    public  boolean isPause(){
+    public boolean isPause() {
         return isPause;
     }
 
@@ -76,12 +78,12 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
         if (mListener != null) {
             mListener.onProgress(progress);
         }
-        if (mFinishSize >= mFileSize) {
-            if (mListener != null) {
-                mListener.onFinish(mDownloadFilePath);
-                reset();
-            }
-        }
+//        if (mFinishSize >= mFileSize) {
+//            if (mListener != null) {
+//                mListener.onFinish(mDownloadFilePath);
+//                reset();
+//            }
+//        }
     }
 
     @Override
@@ -90,7 +92,7 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
         if (downloaders.isEmpty()) {
             LogTools.e(TAG, "all task is executed");
             if (mListener != null) {
-                mListener.onTaskComplete();
+                mListener.onFinish(mDownloadFilePath);
                 reset();
             }
         }
@@ -109,12 +111,30 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
     }
 
     @Override
-    public void onTaskFailure(String error) {
+    public void onTaskFailure(BaseDownloadTask task, String error) {
+        downloaders.remove(task);
+        isTaskFailure = true;
         stop();
-        downloaders.clear();
-        if (mListener != null) {
-            mListener.onFailure(error);
-            reset();
+        taskFailure(error);
+    }
+
+    @Override
+    public void onTaskStoped(BaseDownloadTask task) {
+        if (isTaskFailure){
+            downloaders.remove(task);
+            LogTools.p(TAG,"其中一个任务下载失败停止所有任务");
+            taskFailure("");
+        }
+
+    }
+
+    private void taskFailure(String s) {
+        if (downloaders.isEmpty()) {
+            if (mListener != null) {
+                mListener.onFailure(s);
+                reset();
+            }
+            LogTools.p(TAG,"-------没有任何任务了-----");
         }
     }
 
@@ -167,6 +187,8 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
     private synchronized void reset() {
         mFinishSize = 0;
         mFileSize = 0;
+        isTaskFailure = false;
+        isPause = false;
         if (downloaders != null) {
             downloaders.clear();
         }

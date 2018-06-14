@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:layout_gravity="center"
     android:background="@mipmap/ic_background"
-    android:padding="24dp">
+    android:padding="16dp">
 
 
     <TextView
@@ -26,7 +26,8 @@
         android:layout_marginTop="8dp"
         android:text="@string/dialog_newest_version"
         android:textColor="@color/colorWhite"
-        android:textSize="20sp" />
+        android:maxLines="1"
+        android:textSize="19sp" />
 
     <TextView
         android:id="@+id/version_size_tv"
@@ -36,7 +37,7 @@
         android:layout_marginTop="8dp"
         android:text="@string/dialog_newest_file_size"
         android:textColor="@color/colorWhite"
-        android:textSize="20sp" />
+        android:textSize="19sp" />
 
     <TextView
         android:id="@+id/update_conntent_title_tv"
@@ -47,7 +48,7 @@
         android:text="@string/dialog_update_content"
         android:layout_marginTop="8dp"
         android:textColor="@color/colorWhite"
-        android:textSize="20sp" />
+        android:textSize="19sp" />
 
     <TextView
         android:id="@+id/update_content_tv"
@@ -60,7 +61,7 @@
         android:ellipsize="end"
         android:text="1、优化\n2、修复bug\n3、新增功能\n4、性能优化\n5、体验优化\n6\n7\n8"
         android:textColor="@color/colorWhite"
-        android:textSize="20sp" />
+        android:textSize="19sp" />
 
 
     <TextView
@@ -74,7 +75,7 @@
         android:text="@string/dialog_upgrade_label"
         android:textColor="@color/colorWhite"
         android:layout_marginTop="12dp"
-        android:textSize="20sp" />
+        android:textSize="19sp" />
 
     <TextView
         android:id="@+id/update_later_tv"
@@ -85,7 +86,7 @@
         android:layout_marginTop="12dp"
         android:text="@string/dialog_upgrade_later"
         android:textColor="@color/colorWhite"
-        android:textSize="20sp" />
+        android:textSize="19sp" />
 
 
 </RelativeLayout>
