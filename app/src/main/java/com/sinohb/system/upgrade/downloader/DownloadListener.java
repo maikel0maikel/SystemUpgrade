@@ -22,5 +22,5 @@ public interface DownloadListener {
 
     void onNoNewVersion();
 
-    void onDirectUpdate();
+    void onDirectUpdate(String filePath);
 }

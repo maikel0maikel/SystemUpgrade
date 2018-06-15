@@ -25,6 +25,11 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
     private volatile long mFinishSize = 0;
     protected String url;
     private DownloadListener mListener;
+
+    public String getDownloadFilePath() {
+        return mDownloadFilePath;
+    }
+
     private String mDownloadFilePath;
     private boolean isPause = false;
     private boolean isTaskFailure = false;
@@ -201,10 +206,11 @@ public abstract class BaseDownloadManager implements Callable<UpgradeEntity>, Do
         }
     }
 
-    protected void notifyUpgrade() {
-        LogTools.p(TAG, "通知直接弹出升级框");
+    protected void notifyUpgrade(String path) {
+        mDownloadFilePath = path;
+        LogTools.p(TAG, "通知直接弹出升级框:"+mDownloadFilePath);
         if (mListener != null) {
-            mListener.onDirectUpdate();
+            mListener.onDirectUpdate(mDownloadFilePath);
         }
     }
 

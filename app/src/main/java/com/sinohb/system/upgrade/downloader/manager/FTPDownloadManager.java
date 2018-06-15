@@ -65,7 +65,7 @@ public class FTPDownloadManager extends BaseDownloadManager {
                             localMd5.equalsIgnoreCase(upgradeEntity.getMD5()) &&
                             mFileSize == mDownloadFile.length()) {
                         LogTools.p(TAG, "本地存在要下载的文件并且md5校验通过不再下载");
-                        notifyUpgrade();
+                        notifyUpgrade(mDownloadFile.getAbsolutePath());
                         return upgradeEntity;
                     }else {
                         LogTools.p(TAG,"本地文件存在md5校验不通过或者文件下载未完成需下载 localMd5="+localMd5+",localFileSize = "+mDownloadFile.length());

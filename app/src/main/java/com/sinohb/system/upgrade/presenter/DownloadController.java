@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Message;
 
 import com.sinohb.logger.LogTools;
+import com.sinohb.logger.utils.FileUtils;
 import com.sinohb.system.upgrade.UpgradeAppclition;
 import com.sinohb.system.upgrade.constant.UpgradeConstants;
 import com.sinohb.system.upgrade.downloader.task.VertifyTask;
@@ -31,6 +32,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     private String storePath;
     private int mTryTimes = 0;
     private String remoteMd5;
+
     @Override
     public boolean isTaskStart() {
         return isTaskStart;
@@ -38,7 +40,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
 
     @Override
     public boolean isPause() {
-        return downloadTask == null?false:downloadTask.isPause();
+        return downloadTask == null ? false : downloadTask.isPause();
     }
 
     @Override
@@ -54,6 +56,15 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     }
 
     private void sendUpdateBroadcast() {
+        if(storePath == null){
+            storePath = downloadTask.getDownloadFilePath();
+        }
+        if (storePath == null||storePath.length() ==0){
+            LogTools.p(TAG,"路径为空删除文件夹并重新尝试");
+            FileUtils.delete(new File(UpgradeConstants.DOWNLOAD_PATH));
+            onFailure("storePath is null");
+            return;
+        }
         Intent updateIntent = new Intent(UpgradeConstants.ACTION_PACKAGE);
         updateIntent.putExtra(UpgradeConstants.ACTION_PACKAGE_EXTRA_PATH, storePath);
         updateIntent.putExtra(UpgradeConstants.ACTION_PACKAGE_EXTRA_NOW, true);
@@ -112,7 +123,7 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     @Override
     public void download(String url) {
         if (isTaskStart) {
-            LogTools.e(TAG,"任务没有去下载：isTaskStart="+isTaskStart);
+            LogTools.e(TAG, "任务没有去下载：isTaskStart=" + isTaskStart);
             return;
         }
         startDownload(url);
@@ -127,27 +138,27 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     }
 
     private void realStartDownloadTask() {
-        if (downloadTask == null){
-            LogTools.e(TAG,"任务为空请检查");
+        if (downloadTask == null) {
+            LogTools.e(TAG, "任务为空请检查");
             return;
         }
         isTaskStart = true;
-        ThreadPool.getPool().execute(new FutureTask<UpgradeEntity>(downloadTask){
+        ThreadPool.getPool().execute(new FutureTask<UpgradeEntity>(downloadTask) {
             @Override
             protected void done() {
                 super.done();
                 try {
                     UpgradeEntity entity = get();
-                    if (entity!=null){
+                    if (entity != null) {
                         remoteMd5 = entity.getMD5();
-                        LogTools.p(TAG,"从服务器获取的下载信息:"+ JsonUtils.toJson(entity));
-                    }else {
-                        LogTools.p(TAG,"从服务器获取的下载信息:null");
+                        LogTools.p(TAG, "从服务器获取的下载信息:" + JsonUtils.toJson(entity));
+                    } else {
+                        LogTools.p(TAG, "从服务器获取的下载信息:null");
                     }
                 } catch (InterruptedException e) {
-                    LogTools.p(TAG,e,"从服务器获取的下载信息出错");
+                    LogTools.p(TAG, e, "从服务器获取的下载信息出错");
                 } catch (ExecutionException e) {
-                    LogTools.p(TAG,e,"从服务器获取的下载信息出错");
+                    LogTools.p(TAG, e, "从服务器获取的下载信息出错");
                 }
             }
         });
@@ -187,9 +198,10 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
                         LogTools.p(TAG, "md5校验通过弹出升级框");
                     } else {
                         File file = new File(downloadFilePath);
-                        LogTools.p(TAG, "md5校验不通过删除下载文件重新开始下载大小："+file.length()+",路径：downloadFilePath="+downloadFilePath);
+                        LogTools.p(TAG, "md5校验不通过删除下载文件重新开始下载大小：" + file.length() + ",路径：downloadFilePath=" + downloadFilePath);
                         file.delete();
-                        //onFailure("md5校验不通过");
+                        //reset();
+                        onFailure("md5校验不通过");
                     }
                 } catch (InterruptedException e) {
                     LogTools.e(TAG, e, "获取文件md5失败路径：" + downloadFilePath);
@@ -210,12 +222,12 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
             e1.printStackTrace();
         }
         mTryTimes++;
-        if (mTryTimes == 3){
+        if (mTryTimes == 3) {
             mHandler.sendEmptyMessage(UpdateHandler.MSG_DOWNLOAD_FAILURE);
             reset();
             LogTools.e(TAG, "尝试3次下载失败退出下载服务" + error);
-        }else {
-            LogTools.p(TAG,"下载失败尝试第"+mTryTimes+"次");
+        } else {
+            LogTools.p(TAG, "下载失败尝试第" + mTryTimes + "次");
             realStartDownloadTask();
         }
     }
@@ -268,7 +280,8 @@ public class DownloadController implements DownloadPresenter.Controller, Downloa
     }
 
     @Override
-    public void onDirectUpdate() {
+    public void onDirectUpdate(String filePath) {
+        storePath = filePath;
         mHandler.sendEmptyMessage(UpdateHandler.MSG_DIRECT_UPDATE);
     }
 
